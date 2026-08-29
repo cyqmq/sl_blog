@@ -1,0 +1,93 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<BaseLayout title="搜索" description="站内全文搜索">
+  <h1 style="margin-top:32px;font-size:28px;display:flex;align-items:center;gap:8px;">
+    <Icon name="search" size={22} /> 站内搜索
+  </h1>
+  <p style="color:var(--muted);">基于 Pagefind 的全文检索，覆盖博客与导航页面。</p>
+
+  <div class="search-page">
+    <label class="search">
+      <Icon name="search" size={16} />
+      <input id="pf-input" type="search" placeholder="输入关键词，如 Astro、导航…" autocomplete="off" />
+    </label>
+    <div id="pf-results" class="pf-results"></div>
+    <p id="pf-hint" class="empty">
+      搜索需在 <code>npm run build</code> 之后通过 <code>npm run preview</code> 访问；
+      开发模式（dev）下 Pagefind 索引尚未生成。
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  const input = document.getElementById('pf-input') as HTMLInputElement | null;
+  const results = document.getElementById('pf-results');
+  const hint = document.getElementById('pf-hint');
+  let pagefind: any = null;
+  let timer: number | undefined;
+
+  async function ensurePagefind() {
+    if (pagefind) return pagefind;
+    try {
+      const pfUrl = '/pagefind/pagefind.js';
+      pagefind = await import(/* @vite-ignore */ pfUrl);
+      await pagefind.init();
+      hint?.setAttribute('hidden', '');
+    } catch (e) {
+      if (hint) hint.textContent = '未找到 Pagefind 索引，请先执行 npm run build。';
+      throw e;
+    }
+    return pagefind;
+  }
+
+  async function run(q: string) {
+    if (!results) return;
+    if (!q.trim()) {
+      results.innerHTML = '';
+      return;
+    }
+    try {
+      const pf = await ensurePagefind();
+      const search = await pf.search(q);
+      const items = await Promise.all(search.results.slice(0, 20).map((r: any) => r.data()));
+      results.innerHTML = items
+        .map(
+          (it: any) =>
+            `<a class="pf-item" href="${it.url}">
+               <div class="pf-title">${it.meta?.title || it.url}</div>
+               <div class="pf-excerpt">${it.excerpt || ''}</div>
+             </a>`
+        )
+        .join('') || '<p class="empty">没有匹配结果。</p>';
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  input?.addEventListener('input', () => {
+    window.clearTimeout(timer);
+    timer = window.setTimeout(() => run(input.value), 250);
+  });
+</script>
+
+<style>
+  .search-page { margin-top: 18px; }
+  .search {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; color: var(--muted);
+  }
+  .search input { flex: 1; border: 0; background: transparent; outline: none; color: var(--text); font-size: 15px; }
+  .pf-results { display: grid; gap: 10px; margin-top: 18px; }
+  .pf-item {
+    display: block; padding: 14px 16px; border: 1px solid var(--border);
+    border-radius: 12px; background: var(--bg-soft); transition: border-color .15s, transform .15s;
+  }
+  .pf-item:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .pf-title { font-weight: 600; color: var(--accent); }
+  .pf-excerpt { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .pf-excerpt :global(mark) { background: var(--accent-soft); color: var(--text); border-radius: 3px; padding: 0 2px; }
+</style>

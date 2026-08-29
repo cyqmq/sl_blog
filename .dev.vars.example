@@ -1,0 +1,14 @@
+# 复制本文件为 .dev.vars 并填入真实值（.dev.vars 已被 .gitignore 忽略，不会入库）
+# 本地预览：npx wrangler pages dev ./dist --ip 0.0.0.0 --port 8788
+
+# 后台管理密码（/admin 登录）
+SITE_PASSWORD=请改成你自己的强密码
+
+# 登录 Cookie 签名密钥（随便一段足够长的随机字符串）
+AUTH_SECRET=请改成随机长字符串
+
+# 你的网易云 Worker 的 API Token（由 Worker 的 API_TOKEN 环境变量决定）
+NETEASE_TOKEN=你的网易云WorkerToken
+
+# 你的网易云 Worker 地址（不含结尾斜杠）
+NETEASE_API=https://你的worker地址

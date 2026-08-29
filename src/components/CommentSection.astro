@@ -1,0 +1,36 @@
+---
+import { comments } from '../config/site';
+
+// 评论组件：默认关闭。在 site.ts 中 enabled=true 并填好 repo 后生效。
+const enabled = comments.enabled && comments.provider === 'giscus';
+const g = comments.giscus;
+const theme = 'preferred_color_scheme';
+---
+
+{enabled && (
+  <section class="comments" data-pagefind-ignore>
+    <script
+      is:inline
+      src="https://giscus.app/client.js"
+      data-repo={g.repo}
+      data-repo-id={g.repoId}
+      data-category={g.category}
+      data-category-id={g.categoryId}
+      data-mapping={g.mapping}
+      data-lang={g.lang}
+      data-theme={theme}
+      crossorigin="anonymous"
+      async
+    ></script>
+  </section>
+)}
+
+{!enabled && (
+  <section class="comments-note" data-pagefind-ignore>
+    <p>评论功能未开启。在 <code>src/config/site.ts</code> 中设置 <code>comments.enabled = true</code> 并配置 Giscus 即可启用。</p>
+  </section>
+)}
+
+<style>
+  .comments-note { color: var(--muted); font-size: 13px; margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--border); }
+</style>

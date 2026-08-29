@@ -1,0 +1,42 @@
+---
+title: MDX 写作示例（数学公式与代码）
+description: 演示 MDX、KaTeX 数学公式与代码高亮。
+pubDate: 2026-08-26
+tags: ["MDX", "教程"]
+draft: false
+---
+
+这是一个 `.mdx` 文章，支持在 Markdown 中混用组件与数学公式。
+
+## 行内与块级公式（KaTeX）
+
+质能方程： $E = mc^2$
+
+高斯积分：
+
+$$
+\int_{-\infty}^{\infty} e^{-x^2}\,dx = \sqrt{\pi}
+$$
+
+## 代码高亮（Shiki，随主题切换）
+
+```ts
+interface User {
+  id: number;
+  name: string;
+}
+
+function greet(user: User): string {
+  return `Hello, ${user.name}!`;
+}
+```
+
+## MDX 能力
+
+MDX 允许直接写 JSX，例如一个带样式的提示框：
+
+<div style="padding:12px 16px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:8px;">
+  💡 提示：修改 <code>src/config/site.ts</code> 即可自定义全站资料与导航。
+</div>
+
+> 构建后可在「搜索」页用 Pagefind 检索到本文。

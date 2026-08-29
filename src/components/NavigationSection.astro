@@ -1,0 +1,33 @@
+---
+import Icon from './Icon.astro';
+
+interface NavLink {
+  name: string;
+  url: string;
+  desc?: string;
+  icon?: string;
+}
+interface Props {
+  title: string;
+  icon?: string;
+  links: NavLink[];
+}
+const { title, icon = 'star', links } = Astro.props;
+---
+
+<section>
+  <h2 class="section-title">
+    <span class="ico"><Icon name={icon} size={18} /></span> {title}
+  </h2>
+  <div class="grid">
+    {links.map((link) => (
+      <a class="card" href={link.url} target="_blank" rel="noopener noreferrer">
+        <span class="ico">{link.icon ? <Icon name={link.icon} size={18} /> : '🔗'}</span>
+        <span>
+          <div class="name">{link.name}</div>
+          {link.desc && <div class="desc">{link.desc}</div>}
+        </span>
+      </a>
+    ))}
+  </div>
+</section>

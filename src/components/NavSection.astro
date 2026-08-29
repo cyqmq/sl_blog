@@ -1,0 +1,20 @@
+---
+import type { NavCategory } from '../data/nav';
+interface Props {
+  category: NavCategory;
+}
+const { category } = Astro.props;
+---
+
+<section>
+  <h2 class="section-title">{category.title}</h2>
+  <div class="grid">
+    {category.links.map((link) => (
+      <a class="card" href={link.url} target="_blank" rel="noopener noreferrer">
+        <div class="icon">{link.icon ?? '🔗'}</div>
+        <div class="name">{link.name}</div>
+        {link.desc && <div class="desc">{link.desc}</div>}
+      </a>
+    ))}
+  </div>
+</section>

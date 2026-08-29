@@ -1,0 +1,29 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import NavigationSection from '../components/NavigationSection.astro';
+import { site, profile, socials, navCategories } from '../config/site';
+---
+
+<BaseLayout title={`${site.title} · 导航`}>
+  <div class="dashboard">
+    <section class="intro">
+      <div class="intro-text">
+        <h1>Hi，我是 <em>{profile.name}</em></h1>
+        <div class="handle">{profile.handle}</div>
+        <div class="role">{profile.role}</div>
+        {profile.bio.map((p) => <p>{p}</p>)}
+        <div class="connect-list">
+          {socials.map((s) => (
+            <a href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.name}>
+              <Icon name={s.icon} size={18} />
+            </a>
+          ))}
+        </div>
+      </div>
+      <img class="avatar" src={profile.avatar} alt={`${profile.name} 头像`} width="92" height="92" />
+    </section>
+
+    {navCategories.map((cat) => <NavigationSection title={cat.title} icon={cat.icon} links={cat.links} />)}
+  </div>
+</BaseLayout>

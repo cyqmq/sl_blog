@@ -1,0 +1,45 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import CommentSection from '../../components/CommentSection.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('blog', ({ data }) => !data.draft);
+  return posts.map((post) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await post.render();
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+
+<BaseLayout title={post.data.title} description={post.data.description}>
+  <article style="margin-top:32px;">
+    <a href="/blog" style="color:var(--muted);font-size:14px;">← 返回博客</a>
+    <h1 style="font-size:30px;margin:12px 0 4px;">{post.data.title}</h1>
+    <div class="meta" style="color:var(--muted);">
+      {post.data.pubDate.toLocaleDateString('zh-CN')}
+      {post.data.tags.map((t) => <span class="tag">{t}</span>)}
+    </div>
+
+    <div class="layout">
+      <div class="prose">
+        <Content />
+      </div>
+
+      {toc.length > 0 && (
+        <aside class="toc">
+          <h4>目录</h4>
+          {toc.map((h) => (
+            <a class={h.depth === 3 ? 'lvl-3' : ''} href={`#${h.slug}`}>{h.text}</a>
+          ))}
+        </aside>
+      )}
+    </div>
+
+    <CommentSection />
+  </article>
+</BaseLayout>

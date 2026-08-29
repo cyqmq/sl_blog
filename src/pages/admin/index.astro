@@ -1,0 +1,225 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+
+const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
+  (a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()
+);
+---
+
+<BaseLayout title="管理后台" description="管理员控制台">
+  <div class="admin">
+    <div class="admin-head">
+      <h1><Icon name="star" size={22} /> 管理后台</h1>
+      <a class="logout" href="/logout">退出登录</a>
+    </div>
+
+    <p class="hint">
+      这是仅管理员可访问的区域（由 Cloudflare Pages Functions 鉴权）。
+      公开站点（导航 / 博客）任何人都能访问。
+    </p>
+
+    <section class="stat-grid">
+      <div class="stat"><div class="num">{posts.length}</div><div class="lbl">文章总数</div></div>
+      <div class="stat"><div class="num">公开</div><div class="lbl">站点状态</div></div>
+      <div class="stat"><div class="num">/admin</div><div class="lbl">受保护路径</div></div>
+    </section>
+
+    <section class="config-editor">
+      <h2 class="section-title"><span class="ico"><Icon name="wrench" size={18} /></span> 音乐播放器配置</h2>
+      <p class="hint">这些配置保存在 Cloudflare KV（绑定 SITE_CONFIG），保存后全站播放器立即生效，无需重新构建。</p>
+
+      <div class="form-row">
+        <label for="cfg-api">解析 API 地址（网易云 Worker）</label>
+        <input id="cfg-api" type="text" placeholder="https://your-worker.dev" />
+      </div>
+
+      <div class="form-row">
+        <label for="cfg-quality">默认音质</label>
+        <select id="cfg-quality">
+          <option value="standard">标准音质</option>
+          <option value="exhigh">极高音质</option>
+          <option value="lossless">无损音质</option>
+          <option value="hires">Hi-Res 音质</option>
+          <option value="sky">沉浸环绕声</option>
+          <option value="jyeffect">高清环绕声</option>
+          <option value="jymaster">超清母带</option>
+          <option value="dolby">杜比全景声</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <label>播放列表（网易云歌曲 ID）</label>
+        <div id="cfg-list" class="cfg-list"></div>
+        <button type="button" id="cfg-add" class="btn-ghost">+ 添加一首</button>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" id="cfg-save" class="btn-primary">保存配置</button>
+        <span id="cfg-status" class="cfg-status"></span>
+      </div>
+    </section>
+
+    <h2 class="section-title"><span class="ico"><Icon name="book" size={18} /></span> 文章管理</h2>
+    <div class="post-list">
+      {posts.map((p) => (
+        <div class="post-row">
+          <a href={`/blog/${p.slug}`}>{p.data.title}</a>
+          <span class="meta">{p.data.pubDate.toLocaleDateString('zh-CN')}</span>
+        </div>
+      ))}
+    </div>
+
+    <p class="note">
+      提示：静态站点本身无法直接写入文件。若要在此「新建/编辑文章」，
+      需配合后端（Cloudflare KV / D1，或调用 GitHub API 的 Worker）。当前为只读管理视图。
+    </p>
+  </div>
+
+  <script>
+    const apiEl = document.getElementById('cfg-api') as HTMLInputElement;
+    const qEl = document.getElementById('cfg-quality') as HTMLSelectElement;
+    const listEl = document.getElementById('cfg-list')!;
+    const statusEl = document.getElementById('cfg-status')!;
+    const escapeAttr = (s: string) =>
+      String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+    // 输入歌曲 ID 后，自动调用同源代理识别并填充歌名/歌手
+    async function autoFill(rowEl: HTMLElement) {
+      const idEl = rowEl.querySelector('.cfg-id') as HTMLInputElement;
+      const nameEl = rowEl.querySelector('.cfg-name') as HTMLInputElement;
+      const artistEl = rowEl.querySelector('.cfg-artist') as HTMLInputElement;
+      const id = parseInt(idEl.value, 10);
+      if (!id || id <= 0) return;
+      const q = qEl.value || 'exhigh';
+      const prevName = nameEl.placeholder;
+      const prevArtist = artistEl.placeholder;
+      nameEl.placeholder = '识别中…';
+      artistEl.placeholder = '识别中…';
+      try {
+        const r = await fetch(`/api/ne?path=song&id=${id}&level=${q}&type=json`);
+        const j = await r.json();
+        if (j && j.success && j.data) {
+          const d = j.data;
+          if (d.name) nameEl.value = d.name;
+          if (d.ar_name) artistEl.value = d.ar_name;
+        }
+      } catch (e) {
+        /* 忽略识别失败，保留手动填写 */
+      } finally {
+        nameEl.placeholder = prevName;
+        artistEl.placeholder = prevArtist;
+      }
+    }
+
+    function row(t: any = {}) {
+      const d = document.createElement('div');
+      d.className = 'cfg-item';
+      d.innerHTML = `
+        <input class="cfg-id" type="number" placeholder="ID" value="${t.id ?? ''}" />
+        <input class="cfg-name" type="text" placeholder="歌名" value="${escapeAttr(t.name || '')}" />
+        <input class="cfg-artist" type="text" placeholder="歌手" value="${escapeAttr(t.artist || '')}" />
+        <button type="button" class="cfg-del" title="删除">✕</button>`;
+      d.querySelector('.cfg-del')!.addEventListener('click', () => d.remove());
+      const idEl = d.querySelector('.cfg-id') as HTMLInputElement;
+      idEl.addEventListener('change', () => autoFill(d));
+      return d;
+    }
+
+    document.getElementById('cfg-add')!.addEventListener('click', () => listEl.appendChild(row()));
+
+    async function load() {
+      try {
+        const r = await fetch('/api/config');
+        const c = await r.json();
+        apiEl.value = c.api || '';
+        qEl.value = c.quality || 'exhigh';
+        listEl.innerHTML = '';
+        (c.playlist || []).forEach((t: any) => listEl.appendChild(row(t)));
+        if (!(c.playlist || []).length) listEl.appendChild(row());
+      } catch (e) {
+        statusEl.textContent = '读取配置失败';
+      }
+    }
+
+    document.getElementById('cfg-save')!.addEventListener('click', async () => {
+      const playlist = Array.from(listEl.querySelectorAll('.cfg-item')).map((d: any) => ({
+        id: Number(d.querySelector('.cfg-id').value) || 0,
+        name: d.querySelector('.cfg-name').value,
+        artist: d.querySelector('.cfg-artist').value,
+      })).filter((t: any) => t.id > 0);
+      const body = { api: apiEl.value.trim(), quality: qEl.value, playlist };
+      statusEl.textContent = '保存中…';
+      try {
+        const r = await fetch('/api/config', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const j = await r.json();
+        statusEl.textContent = j.success ? '已保存 ✓' : '失败：' + (j.message || '');
+        if (j.success && j.data) {
+          qEl.value = j.data.quality;
+          apiEl.value = j.data.api;
+          listEl.innerHTML = '';
+          (j.data.playlist || []).forEach((t: any) => listEl.appendChild(row(t)));
+        }
+      } catch (e) {
+        statusEl.textContent = '保存失败：网络错误';
+      }
+    });
+
+    load();
+  </script>
+</BaseLayout>
+
+<style>
+  .admin { margin-top: 32px; }
+  .admin-head { display: flex; align-items: center; justify-content: space-between; }
+  .admin h1 { margin: 0; font-size: 26px; display: flex; align-items: center; gap: 8px; }
+  .logout {
+    border: 1px solid var(--border); background: var(--bg-soft); color: var(--text);
+    padding: 7px 14px; border-radius: 9px; font-size: 13px;
+  }
+  .logout:hover { color: var(--accent); border-color: var(--accent); }
+  .hint { color: var(--muted); font-size: 13px; }
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0 26px; }
+  .stat { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
+  .stat .num { font-size: 22px; font-weight: 700; color: var(--accent); }
+  .stat .lbl { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .post-list { display: grid; gap: 8px; }
+  .post-row {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg-soft); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px;
+  }
+  .post-row a { color: var(--text); }
+  .post-row a:hover { color: var(--accent); }
+  .post-row .meta { color: var(--muted); font-size: 12px; }
+  .note { color: var(--muted); font-size: 12px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+  .config-editor { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin: 8px 0 30px; }
+  .config-editor .hint { margin: 8px 0 16px; }
+  .form-row { margin-bottom: 16px; }
+  .form-row > label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 7px; }
+  .config-editor input,
+  .config-editor select {
+    width: 100%; padding: 10px 13px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); font-size: 14px; outline: none;
+  }
+  .config-editor input:focus,
+  .config-editor select:focus { border-color: var(--accent); }
+  .btn-ghost {
+    align-self: start; padding: 9px 14px; border-radius: 9px; border: 1px dashed var(--border);
+    background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;
+  }
+  .btn-ghost:hover { color: var(--accent); border-color: var(--accent); }
+  .form-actions { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
+  .btn-primary {
+    padding: 10px 22px; border: 0; border-radius: 10px; background: var(--accent);
+    color: #0f1115; font-weight: 600; font-size: 14px; cursor: pointer;
+  }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .cfg-status { font-size: 13px; color: var(--muted); }
+</style>

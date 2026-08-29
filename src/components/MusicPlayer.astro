@@ -1,0 +1,184 @@
+---
+import { music } from '../config/site';
+---
+
+{
+  music.enabled && (
+    <div
+      id="music-player"
+      class="music-player"
+      transition:persist
+      data-fallback={JSON.stringify(music)}
+    >
+      <audio id="music-audio" transition:persist preload="none"></audio>
+      <div class="mp-card">
+        <button class="mp-expand" id="mp-expand" aria-label="展开/收起播放列表" title="展开/收起">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+        </button>
+        <img id="mp-cover" class="mp-cover" src="/favicon.svg" alt="" referrerpolicy="no-referrer" />
+        <div class="mp-meta">
+          <div class="mp-title" id="mp-title">未选择</div>
+          <div class="mp-artist" id="mp-artist"></div>
+        </div>
+        <div class="mp-controls">
+          <button class="mp-btn" id="mp-prev" aria-label="上一首" title="上一首">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h2v14H6zM20 5v14l-10-7z"/></svg>
+          </button>
+          <button class="mp-btn mp-play" id="mp-play" aria-label="播放/暂停" title="播放/暂停">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button class="mp-btn" id="mp-next" aria-label="下一首" title="下一首">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 5h2v14h-2zM4 5l10 7-10 7z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="mp-extra" id="mp-extra" hidden>
+        <div class="mp-progress">
+          <span id="mp-cur">0:00</span>
+          <input type="range" id="mp-seek" min="0" max="100" value="0" step="0.1" aria-label="进度" />
+          <span id="mp-dur">0:00</span>
+        </div>
+        <div class="mp-volume">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 9v6h4l5 5V4L8 9H4z"/></svg>
+          <input type="range" id="mp-vol" min="0" max="1" step="0.01" value="0.8" aria-label="音量" />
+        </div>
+        <ul class="mp-list" id="mp-list"></ul>
+      </div>
+    </div>
+  )
+}
+
+<script>
+  const root = document.getElementById('music-player');
+  if (root && !window.__musicInit) {
+    window.__musicInit = true;
+
+    const fallback = JSON.parse(root.dataset.fallback || '{}');
+    let QUALITY = fallback.quality || 'exhigh';
+    let playlist = Array.isArray(fallback.playlist) ? fallback.playlist : [];
+
+    const audio = document.getElementById('music-audio') as HTMLAudioElement;
+    const cover = document.getElementById('mp-cover') as HTMLImageElement;
+    const titleEl = document.getElementById('mp-title')!;
+    const artistEl = document.getElementById('mp-artist')!;
+    const playBtn = document.getElementById('mp-play')!;
+    const prevBtn = document.getElementById('mp-prev')!;
+    const nextBtn = document.getElementById('mp-next')!;
+    const expandBtn = document.getElementById('mp-expand')!;
+    const extra = document.getElementById('mp-extra')!;
+    const seek = document.getElementById('mp-seek') as HTMLInputElement;
+    const curEl = document.getElementById('mp-cur')!;
+    const durEl = document.getElementById('mp-dur')!;
+    const vol = document.getElementById('mp-vol') as HTMLInputElement;
+    const listEl = document.getElementById('mp-list')!;
+
+    const PLAY = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+    const PAUSE = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>';
+
+    let index = 0;
+
+    const fmt = (s: number) => {
+      if (!s || isNaN(s)) return '0:00';
+      s = Math.floor(s);
+      return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+    };
+
+    const setMeta = (name: string, artist: string, pic?: string) => {
+      titleEl.textContent = name;
+      artistEl.textContent = artist || '';
+      if (pic) cover.src = pic;
+    };
+
+    const renderList = () => {
+      listEl.innerHTML = '';
+      playlist.forEach((t: any, i: number) => {
+        const li = document.createElement('li');
+        li.className = 'mp-item' + (i === index ? ' active' : '');
+        const n = document.createElement('span');
+        n.className = 'mp-item-name';
+        n.textContent = t.name;
+        const a = document.createElement('span');
+        a.className = 'mp-item-artist';
+        a.textContent = t.artist || '';
+        li.appendChild(n);
+        li.appendChild(a);
+        li.addEventListener('click', () => loadTrack(i, true));
+        listEl.appendChild(li);
+      });
+    };
+
+    const loadTrack = async (i: number, autoplay: boolean) => {
+      if (!playlist.length) return;
+      index = (i + playlist.length) % playlist.length;
+      const t = playlist[index];
+      setMeta(t.name, t.artist || '', '/favicon.svg');
+      renderList();
+      try {
+        const r = await fetch(`/api/ne?path=song&id=${t.id}&level=${QUALITY}&type=json`);
+        const j = await r.json();
+        if (j && j.success && j.data) {
+          const d = j.data;
+          setMeta(d.name || t.name, d.ar_name || t.artist || '', d.pic || undefined);
+        }
+      } catch (e) {}
+      audio.src = `/api/ne?path=download&id=${t.id}&quality=${QUALITY}`;
+      audio.load();
+      if (autoplay) audio.play().catch(() => {});
+    };
+
+    playBtn.addEventListener('click', () => {
+      if (!audio.src) {
+        loadTrack(index, true);
+        return;
+      }
+      if (audio.paused) audio.play().catch(() => {});
+      else audio.pause();
+    });
+    prevBtn.addEventListener('click', () => loadTrack(index - 1, true));
+    nextBtn.addEventListener('click', () => loadTrack(index + 1, true));
+    expandBtn.addEventListener('click', () => {
+      extra.hidden = !extra.hidden;
+      expandBtn.classList.toggle('open', !extra.hidden);
+    });
+
+    audio.addEventListener('play', () => (playBtn.innerHTML = PAUSE));
+    audio.addEventListener('pause', () => (playBtn.innerHTML = PLAY));
+    audio.addEventListener('ended', () => loadTrack(index + 1, true));
+    audio.addEventListener('loadedmetadata', () => {
+      durEl.textContent = fmt(audio.duration);
+      seek.max = String(audio.duration || 100);
+    });
+    audio.addEventListener('timeupdate', () => {
+      curEl.textContent = fmt(audio.currentTime);
+      if (audio.duration) seek.value = String(audio.currentTime);
+    });
+    audio.addEventListener('error', () => {
+      titleEl.textContent = '无法播放：' + (playlist[index]?.name || '');
+    });
+
+    seek.addEventListener('input', () => {
+      if (audio.duration) audio.currentTime = parseFloat(seek.value);
+    });
+    vol.addEventListener('input', () => {
+      audio.volume = parseFloat(vol.value);
+    });
+
+    audio.volume = parseFloat(vol.value) || 0.8;
+    renderList();
+    loadTrack(0, false);
+
+    // 运行时从 /api/config 拉取最新配置（KV 覆盖默认），拉取成功后重建歌单
+    fetch('/api/config')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((cfg) => {
+        if (!cfg || !Array.isArray(cfg.playlist) || !cfg.playlist.length) return;
+        QUALITY = cfg.quality || QUALITY;
+        playlist = cfg.playlist;
+        if (!audio.src) {
+          renderList();
+          loadTrack(0, false);
+        }
+      })
+      .catch(() => {});
+  }
+</script>

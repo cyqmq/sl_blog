@@ -1,0 +1,80 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+
+const posts = (await getCollection('blog', ({ data }) => !data.draft))
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+// 收集所有标签用于筛选
+const allTags = [...new Set(posts.flatMap((p) => p.data.tags))];
+---
+
+<BaseLayout title="博客" description="文章列表">
+  <h1 style="margin-top:32px;font-size:28px;">📝 博客</h1>
+
+  <div class="toolbar">
+    <label class="search">
+      <Icon name="search" size={16} />
+      <input id="search" type="search" placeholder="搜索标题或标签…" autocomplete="off" />
+    </label>
+  </div>
+
+  <div class="chips" id="chips">
+    <button class="chip" data-tag="" aria-pressed="true">全部</button>
+    {allTags.map((t) => <button class="chip" data-tag={t} aria-pressed="false">{t}</button>)}
+  </div>
+
+  <div class="post-list" id="post-list">
+    {posts.map((post) => (
+      <a
+        class="post-item"
+        href={`/blog/${post.slug}`}
+        data-title={post.data.title.toLowerCase()}
+        data-tags={post.data.tags.join(',').toLowerCase()}
+      >
+        <h3>{post.data.title}</h3>
+        <div class="meta">
+          {post.data.pubDate.toLocaleDateString('zh-CN')}
+          {post.data.tags.map((t) => <span class="tag">{t}</span>)}
+        </div>
+        <div class="meta" style="margin-top:6px;">{post.data.description}</div>
+      </a>
+    ))}
+  </div>
+  <div class="empty" id="empty" hidden>没有匹配的文章。</div>
+</BaseLayout>
+
+<script>
+  const search = document.getElementById('search') as HTMLInputElement;
+  const chips = document.getElementById('chips');
+  const items = Array.from(document.querySelectorAll<HTMLElement>('.post-item'));
+  const empty = document.getElementById('empty');
+  let activeTag = '';
+
+  function apply() {
+    const q = search.value.trim().toLowerCase();
+    let visible = 0;
+    items.forEach((el) => {
+      const title = el.dataset.title || '';
+      const tags = el.dataset.tags || '';
+      const matchTag = !activeTag || tags.split(',').includes(activeTag);
+      const matchQ = !q || title.includes(q) || tags.includes(q);
+      const show = matchTag && matchQ;
+      el.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    if (empty) empty.toggleAttribute('hidden', visible !== 0);
+  }
+
+  search?.addEventListener('input', apply);
+  chips?.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.chip');
+    if (!btn) return;
+    activeTag = btn.dataset.tag || '';
+    chips.querySelectorAll('.chip').forEach((c) =>
+      c.setAttribute('aria-pressed', String(c === btn))
+    );
+    apply();
+  });
+</script>
