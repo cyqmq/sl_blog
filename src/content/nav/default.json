@@ -17,12 +17,23 @@
       { "name": "npm", "url": "https://npmjs.com", "desc": "包管理", "icon": "package" }
     ]
   },
-  {
-    "title": "工具",
-    "icon": "wrench",
-    "links": [
-      { "name": "TinyPNG", "url": "https://tinypng.com", "desc": "图片压缩", "icon": "image" },
-      { "name": "Carbon", "url": "https://carbon.now.sh", "desc": "代码截图", "icon": "pen" }
-    ]
-  }
-]
+    {
+      "title": "工具",
+      "icon": "wrench",
+      "links": [
+        { "name": "TinyPNG", "url": "https://tinypng.com", "desc": "图片压缩", "icon": "image" },
+        { "name": "Carbon", "url": "https://carbon.now.sh", "desc": "代码截图", "icon": "pen" }
+      ]
+    },
+    {
+      "title": "我的 Workers",
+      "icon": "rocket",
+      "links": [
+        { "name": "CFworker Netease", "url": "https://yy.xn--ykq675h.cn", "desc": "网易云解析 Worker", "icon": "cloud" },
+        { "name": "nextlist", "url": "https://list.xn--ykq675h.cn", "desc": "nextlist", "icon": "cloud" },
+        { "name": "moemail", "url": "https://moemail.3532334911.workers.dev", "desc": "moemail", "icon": "cloud" },
+        { "name": "iptv-manager", "url": "https://iptv.xn--ykq675h.cn", "desc": "iptv-manager", "icon": "cloud" },
+        { "name": "vnts2-cf", "url": "https://wnt2.xn--ykq675h.cn", "desc": "vnts2-cf", "icon": "cloud" }
+      ]
+    }
+  ]
