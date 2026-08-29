@@ -1,0 +1,28 @@
+[
+  {
+    "title": "常用",
+    "icon": "star",
+    "links": [
+      { "name": "GitHub", "url": "https://github.com", "desc": "代码托管", "icon": "github" },
+      { "name": "Cloudflare", "url": "https://cloudflare.com", "desc": "CDN / 边缘计算", "icon": "cloud" },
+      { "name": "Astro", "url": "https://astro.build", "desc": "本站框架", "icon": "rocket" }
+    ]
+  },
+  {
+    "title": "开发",
+    "icon": "code",
+    "links": [
+      { "name": "MDN", "url": "https://developer.mozilla.org", "desc": "Web 文档", "icon": "book" },
+      { "name": "Can I use", "url": "https://caniuse.com", "desc": "兼容性查询", "icon": "check" },
+      { "name": "npm", "url": "https://npmjs.com", "desc": "包管理", "icon": "package" }
+    ]
+  },
+  {
+    "title": "工具",
+    "icon": "wrench",
+    "links": [
+      { "name": "TinyPNG", "url": "https://tinypng.com", "desc": "图片压缩", "icon": "image" },
+      { "name": "Carbon", "url": "https://carbon.now.sh", "desc": "代码截图", "icon": "pen" }
+    ]
+  }
+]

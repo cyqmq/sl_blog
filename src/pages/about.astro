@@ -1,7 +1,9 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icon.astro';
-import { site, profile, socials } from '../config/site';
+import { site } from '../config/site';
+import { getAbout } from '../lib/content';
+const { profile, socials } = await getAbout();
 ---
 
 <BaseLayout title="关于" description={`关于 ${profile.name}`}>

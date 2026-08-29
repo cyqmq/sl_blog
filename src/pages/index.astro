@@ -2,7 +2,11 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Icon from '../components/Icon.astro';
 import NavigationSection from '../components/NavigationSection.astro';
-import { site, profile, socials, navCategories } from '../config/site';
+import { site } from '../config/site';
+import { getNav, getAbout } from '../lib/content';
+
+const navCategories = await getNav();
+const { profile, socials } = await getAbout();
 ---
 
 <BaseLayout title={`${site.title} · 导航`}>

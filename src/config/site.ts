@@ -1,59 +1,9 @@
-// 站点统一配置：改这里即可调整资料、社交链接、导航分类与主题。
+// 站点级配置（主题色 / 音乐播放器 / 评论）。
+// 资料、社交、导航已迁移到 src/content/about 与 src/content/nav（content collections，自动索引 + zod 规则）。
 export const site = {
   title: 'blog神了',
   description: '导航站与博客 · 部署于 Cloudflare Pages',
 };
-
-export const profile = {
-  name: 'cyqmq',
-  handle: '@cyqmq',
-  role: '开发者 / 博主',
-  bio: [
-    '这里是神了，喜欢折腾前端、边缘计算与各种有趣的小工具。',
-    '这个站点用来沉淀笔记、分享折腾记录，顺便听听歌。',
-  ],
-  avatar: '/avatar.svg',
-  email: 'admin@神了.cn',
-  website: 'https://神了.cn',
-};
-
-// 社交/联系方式（icon 对应 src/components/Icon.astro 中已实现的图标名）
-export const socials = [
-  { name: 'GitHub', href: 'https://github.com/cyqmq', icon: 'github' },
-  { name: 'Email', href: 'mailto:i@神了.cn', icon: 'mail' },
-  { name: 'Website', href: 'https://神了.cn', icon: 'globe' },
-  { name: 'RSS', href: '/rss.xml', icon: 'rss' },
-];
-
-// 导航分类（每个分类一组链接）
-export const navCategories = [
-  {
-    title: '常用',
-    icon: 'star',
-    links: [
-      { name: 'GitHub', url: 'https://github.com', desc: '代码托管', icon: 'github' },
-      { name: 'Cloudflare', url: 'https://cloudflare.com', desc: 'CDN / 边缘计算', icon: 'cloud' },
-      { name: 'Astro', url: 'https://astro.build', desc: '本站框架', icon: 'rocket' },
-    ],
-  },
-  {
-    title: '开发',
-    icon: 'code',
-    links: [
-      { name: 'MDN', url: 'https://developer.mozilla.org', desc: 'Web 文档', icon: 'book' },
-      { name: 'Can I use', url: 'https://caniuse.com', desc: '兼容性查询', icon: 'check' },
-      { name: 'npm', url: 'https://npmjs.com', desc: '包管理', icon: 'package' },
-    ],
-  },
-  {
-    title: '工具',
-    icon: 'wrench',
-    links: [
-      { name: 'TinyPNG', url: 'https://tinypng.com', desc: '图片压缩', icon: 'image' },
-      { name: 'Carbon', url: 'https://carbon.now.sh', desc: '代码截图', icon: 'pen' },
-    ],
-  },
-];
 
 // 可选主题色（对应 global.css 中 [data-accent="..."]）
 export const accents = [

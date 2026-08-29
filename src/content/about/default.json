@@ -1,0 +1,18 @@
+{
+  "name": "cyqmq",
+  "handle": "@cyqmq",
+  "role": "开发者 / 博主",
+  "bio": [
+    "这里是神了，喜欢折腾前端、边缘计算与各种有趣的小工具。",
+    "这个站点用来沉淀笔记、分享折腾记录，顺便听听歌。"
+  ],
+  "avatar": "/avatar.svg",
+  "email": "admin@神了.cn",
+  "website": "https://神了.cn",
+  "socials": [
+    { "name": "GitHub", "href": "https://github.com/cyqmq", "icon": "github" },
+    { "name": "Email", "href": "mailto:admin@神了.cn", "icon": "mail" },
+    { "name": "Website", "href": "https://神了.cn", "icon": "globe" },
+    { "name": "RSS", "href": "/rss.xml", "icon": "rss" }
+  ]
+}
