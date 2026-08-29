@@ -31,7 +31,7 @@
       "links": [
         { "name": "CFworker Netease", "url": "https://yy.xn--ykq675h.cn", "desc": "网易云解析 Worker", "icon": "cloud" },
         { "name": "nextlist", "url": "https://list.xn--ykq675h.cn", "desc": "nextlist", "icon": "cloud" },
-        { "name": "moemail", "url": "https://moemail.3532334911.workers.dev", "desc": "moemail", "icon": "cloud" },
+        { "name": "moemail", "url": "https://mail.xn--ykq675h.cn", "desc": "moemail", "icon": "cloud" },
         { "name": "iptv-manager", "url": "https://iptv.xn--ykq675h.cn", "desc": "iptv-manager", "icon": "cloud" },
         { "name": "vnts2-cf", "url": "https://wnt2.xn--ykq675h.cn", "desc": "vnts2-cf", "icon": "cloud" }
       ]
