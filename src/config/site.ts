@@ -5,23 +5,23 @@ export const site = {
 };
 
 export const profile = {
-  name: '你的名字',
-  handle: '@yourhandle',
+  name: '神了',
+  handle: '@cyqmq',
   role: '开发者 / 博主',
   bio: [
-    '这里写一段简短的自我介绍，介绍你是谁、在做什么。',
-    '喜欢折腾前端、边缘计算与各种有趣的小工具。',
+    '这里是神了，喜欢折腾前端、边缘计算与各种有趣的小工具。',
+    '这个站点用来沉淀笔记、分享折腾记录，顺便听听歌。',
   ],
   avatar: '/avatar.svg',
-  email: 'you@example.com',
-  website: 'https://example.com',
+  email: 'i@神了.cn',
+  website: 'https://神了.cn',
 };
 
 // 社交/联系方式（icon 对应 src/components/Icon.astro 中已实现的图标名）
 export const socials = [
-  { name: 'GitHub', href: 'https://github.com/yourname', icon: 'github' },
-  { name: 'Email', href: 'mailto:you@example.com', icon: 'mail' },
-  { name: 'Website', href: 'https://example.com', icon: 'globe' },
+  { name: 'GitHub', href: 'https://github.com/cyqmq', icon: 'github' },
+  { name: 'Email', href: 'mailto:i@神了.cn', icon: 'mail' },
+  { name: 'Website', href: 'https://神了.cn', icon: 'globe' },
   { name: 'RSS', href: '/rss.xml', icon: 'rss' },
 ];
 
