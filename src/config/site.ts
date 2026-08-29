@@ -5,7 +5,7 @@ export const site = {
 };
 
 export const profile = {
-  name: '神了',
+  name: 'cyqmq',
   handle: '@cyqmq',
   role: '开发者 / 博主',
   bio: [
@@ -13,7 +13,7 @@ export const profile = {
     '这个站点用来沉淀笔记、分享折腾记录，顺便听听歌。',
   ],
   avatar: '/avatar.svg',
-  email: 'i@神了.cn',
+  email: 'admin@神了.cn',
   website: 'https://神了.cn',
 };
 
