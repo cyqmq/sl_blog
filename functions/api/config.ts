@@ -107,6 +107,10 @@ export async function onRequest(context: any) {
       oldAdmin.authSecret = String(body.authSecret).trim();
       changed = true;
     }
+    if (body.githubToken && String(body.githubToken).trim()) {
+      oldAdmin.githubToken = String(body.githubToken).trim();
+      changed = true;
+    }
     if (changed) await kv.put('admin', JSON.stringify(oldAdmin));
 
     return json({ success: true, message: '配置已保存', data: { api: music.api, quality: music.quality, playlist: music.playlist } });

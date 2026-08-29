@@ -60,6 +60,11 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
       </div>
 
       <div class="form-row">
+        <label for="cfg-gh">GitHub Token（后台写仓库用，留空 = 不修改）</label>
+        <input id="cfg-gh" type="password" placeholder="github_pat_… 或 ghp_…" autocomplete="off" />
+      </div>
+
+      <div class="form-row">
         <label>播放列表（网易云歌曲 ID）</label>
         <div id="cfg-list" class="cfg-list"></div>
         <button type="button" id="cfg-add" class="btn-ghost">+ 添加一首</button>
@@ -71,20 +76,65 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
       </div>
     </section>
 
-    <h2 class="section-title"><span class="ico"><Icon name="book" size={18} /></span> 文章管理</h2>
-    <div class="post-list">
-      {posts.map((p) => (
-        <div class="post-row">
-          <a href={`/blog/${p.slug}`}>{p.data.title}</a>
-          <span class="meta">{p.data.pubDate.toLocaleDateString('zh-CN')}</span>
-        </div>
-      ))}
-    </div>
+    <section class="config-editor">
+      <h2 class="section-title"><span class="ico"><Icon name="edit" size={18} /></span> 站点内容：导航 / 关于</h2>
+      <p class="hint">
+        以下内容以 JSON 存放在仓库 <code>src/content/</code>（content collections，自动索引 + schema 规则）。
+        保存后提交到 GitHub，自动触发构建生效。
+      </p>
 
-    <p class="note">
-      提示：静态站点本身无法直接写入文件。若要在此「新建/编辑文章」，
-      需配合后端（Cloudflare KV / D1，或调用 GitHub API 的 Worker）。当前为只读管理视图。
-    </p>
+      <div class="form-row">
+        <label>导航（nav/default.json）</label>
+        <div class="editor-actions">
+          <button type="button" class="btn-ghost" id="nav-load">载入</button>
+        </div>
+        <textarea id="nav-editor" class="code-area" rows="10" placeholder="点击「载入」后编辑 JSON"></textarea>
+        <div class="form-actions">
+          <button type="button" class="btn-primary" id="nav-save">保存导航</button>
+          <span id="nav-status" class="cfg-status"></span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>关于（about/default.json）</label>
+        <div class="editor-actions">
+          <button type="button" class="btn-ghost" id="about-load">载入</button>
+        </div>
+        <textarea id="about-editor" class="code-area" rows="10" placeholder="点击「载入」后编辑 JSON"></textarea>
+        <div class="form-actions">
+          <button type="button" class="btn-primary" id="about-save">保存关于</button>
+          <span id="about-status" class="cfg-status"></span>
+        </div>
+      </div>
+    </section>
+
+    <section class="config-editor">
+      <h2 class="section-title"><span class="ico"><Icon name="book" size={18} /></span> 博客文章</h2>
+      <p class="hint">编辑 / 新建 Markdown（含 frontmatter）。保存后提交到仓库自动重建。</p>
+
+      <div class="post-list">
+        {posts.map((p) => (
+          <div class="post-row">
+            <a href={`/blog/${p.slug}`}>{p.data.title}</a>
+            <span class="meta">{p.data.pubDate.toLocaleDateString('zh-CN')}</span>
+            <button type="button" class="post-edit" data-slug={p.slug}>编辑</button>
+          </div>
+        ))}
+      </div>
+
+      <div class="form-row" style="margin-top:18px">
+        <label for="post-slug">文件名 slug（新建时使用，如 my-post；编辑时自动填充）</label>
+        <input id="post-slug" type="text" placeholder="my-post" />
+      </div>
+      <div class="form-row">
+        <label for="post-editor">Markdown 内容（含 frontmatter）</label>
+        <textarea id="post-editor" class="code-area" rows="16" placeholder="---&#10;title: 标题&#10;description: 简介&#10;pubDate: 2024-01-01&#10;---&#10;正文..."></textarea>
+      </div>
+      <div class="form-actions">
+        <button type="button" id="post-save" class="btn-primary">保存文章</button>
+        <span id="post-status" class="cfg-status"></span>
+      </div>
+    </section>
   </div>
 
   <script>
@@ -92,12 +142,12 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
     const qEl = document.getElementById('cfg-quality') as HTMLSelectElement;
     const tokenEl = document.getElementById('cfg-token') as HTMLInputElement;
     const pwdEl = document.getElementById('cfg-password') as HTMLInputElement;
+    const ghEl = document.getElementById('cfg-gh') as HTMLInputElement;
     const listEl = document.getElementById('cfg-list')!;
     const statusEl = document.getElementById('cfg-status')!;
     const escapeAttr = (s: string) =>
       String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-    // 输入歌曲 ID 后，自动调用同源代理识别并填充歌名/歌手
     async function autoFill(rowEl: HTMLElement) {
       const idEl = rowEl.querySelector('.cfg-id') as HTMLInputElement;
       const nameEl = rowEl.querySelector('.cfg-name') as HTMLInputElement;
@@ -167,6 +217,7 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
         playlist,
         neteaseToken: tokenEl.value.trim(),
         password: pwdEl.value.trim(),
+        githubToken: ghEl.value.trim(),
       };
       statusEl.textContent = '保存中…';
       try {
@@ -182,12 +233,84 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
           apiEl.value = j.data.api;
           tokenEl.value = '';
           pwdEl.value = '';
+          ghEl.value = '';
           listEl.innerHTML = '';
           (j.data.playlist || []).forEach((t: any) => listEl.appendChild(row(t)));
         }
       } catch (e) {
         statusEl.textContent = '保存失败：网络错误';
       }
+    });
+
+    // ---- 内容管理：写回 GitHub 仓库 ----
+    async function repoLoad(path: string, targetId: string, statusId: string) {
+      const st = document.getElementById(statusId)!;
+      st.textContent = '载入中…';
+      try {
+        const r = await fetch('/api/repo?path=' + encodeURIComponent(path));
+        const j = await r.json();
+        if (!j.success) { st.textContent = '载入失败：' + j.message; return; }
+        (document.getElementById(targetId) as HTMLTextAreaElement).value = j.content;
+        st.textContent = '已载入 ✓';
+      } catch (e) { st.textContent = '载入失败'; }
+    }
+    async function repoSave(path: string, sourceId: string, statusId: string) {
+      const st = document.getElementById(statusId)!;
+      const content = (document.getElementById(sourceId) as HTMLTextAreaElement).value;
+      st.textContent = '保存中…';
+      try {
+        const r = await fetch('/api/repo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path, content, message: 'update ' + path }),
+        });
+        const j = await r.json();
+        st.textContent = j.success ? '已提交，稍后自动构建 ✓' : '失败：' + (j.message || '');
+      } catch (e) { st.textContent = '保存失败'; }
+    }
+
+    document.getElementById('nav-load')!.addEventListener('click', () => repoLoad('src/content/nav/default.json', 'nav-editor', 'nav-status'));
+    document.getElementById('nav-save')!.addEventListener('click', () => repoSave('src/content/nav/default.json', 'nav-editor', 'nav-status'));
+    document.getElementById('about-load')!.addEventListener('click', () => repoLoad('src/content/about/default.json', 'about-editor', 'about-status'));
+    document.getElementById('about-save')!.addEventListener('click', () => repoSave('src/content/about/default.json', 'about-editor', 'about-status'));
+
+    document.querySelectorAll('.post-edit').forEach((b) =>
+      b.addEventListener('click', async () => {
+        const slug = (b as HTMLButtonElement).dataset.slug!;
+        const st = document.getElementById('post-status')!;
+        st.textContent = '载入中…';
+        const r = await fetch('/api/repo?path=' + encodeURIComponent('src/content/blog/' + slug + '.md'));
+        const j = await r.json();
+        if (j.success) {
+          (document.getElementById('post-editor') as HTMLTextAreaElement).value = j.content;
+          (document.getElementById('post-slug') as HTMLInputElement).value = slug;
+          st.textContent = '已载入 ' + slug + ' ✓';
+        } else st.textContent = '载入失败：' + (j.message || '');
+      })
+    );
+
+    document.getElementById('post-save')!.addEventListener('click', async () => {
+      const slug = (document.getElementById('post-slug') as HTMLInputElement).value.trim();
+      const content = (document.getElementById('post-editor') as HTMLTextAreaElement).value;
+      const st = document.getElementById('post-status')!;
+      if (!content.trim()) { st.textContent = '内容为空'; return; }
+      let path: string;
+      if (slug) path = 'src/content/blog/' + slug + '.md';
+      else {
+        const m = content.match(/title:\s*(.+)/);
+        const s = m ? m[1].trim().replace(/\s+/g, '-').toLowerCase() : 'post-' + Date.now();
+        path = 'src/content/blog/' + s + '.md';
+      }
+      st.textContent = '保存中…';
+      try {
+        const r = await fetch('/api/repo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path, content, message: 'update ' + path }),
+        });
+        const j = await r.json();
+        st.textContent = j.success ? '已提交，稍后自动构建 ✓' : '失败：' + (j.message || '');
+      } catch (e) { st.textContent = '保存失败'; }
     });
 
     load();
@@ -204,32 +327,42 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   }
   .logout:hover { color: var(--accent); border-color: var(--accent); }
   .hint { color: var(--muted); font-size: 13px; }
+  .hint code { background: var(--bg); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--border); }
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 18px 0 26px; }
   .stat { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
   .stat .num { font-size: 22px; font-weight: 700; color: var(--accent); }
   .stat .lbl { color: var(--muted); font-size: 12px; margin-top: 4px; }
   .post-list { display: grid; gap: 8px; }
   .post-row {
-    display: flex; align-items: center; justify-content: space-between;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
     background: var(--bg-soft); border: 1px solid var(--border);
     border-radius: 10px; padding: 10px 14px;
   }
   .post-row a { color: var(--text); }
   .post-row a:hover { color: var(--accent); }
   .post-row .meta { color: var(--muted); font-size: 12px; }
-  .note { color: var(--muted); font-size: 12px; margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); }
+  .post-edit {
+    border: 1px solid var(--border); background: var(--bg); color: var(--muted);
+    padding: 4px 10px; border-radius: 7px; font-size: 12px; cursor: pointer;
+  }
+  .post-edit:hover { color: var(--accent); border-color: var(--accent); }
 
   .config-editor { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin: 8px 0 30px; }
   .config-editor .hint { margin: 8px 0 16px; }
   .form-row { margin-bottom: 16px; }
   .form-row > label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 7px; }
   .config-editor input,
-  .config-editor select {
+  .config-editor select,
+  .config-editor textarea {
     width: 100%; padding: 10px 13px; border-radius: 10px; border: 1px solid var(--border);
     background: var(--bg); color: var(--text); font-size: 14px; outline: none;
+    font-family: inherit;
   }
   .config-editor input:focus,
-  .config-editor select:focus { border-color: var(--accent); }
+  .config-editor select:focus,
+  .config-editor textarea:focus { border-color: var(--accent); }
+  .code-area { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; line-height: 1.5; resize: vertical; }
+  .editor-actions { margin-bottom: 8px; }
   .btn-ghost {
     align-self: start; padding: 9px 14px; border-radius: 9px; border: 1px dashed var(--border);
     background: transparent; color: var(--muted); cursor: pointer; font-size: 13px;

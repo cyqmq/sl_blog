@@ -12,6 +12,7 @@ export interface SiteConfig {
   playlist: { id: number; name: string; artist: string }[];
   password: string;
   authSecret: string;
+  githubToken: string;
 }
 
 const DEFAULT_API = 'https://yy.xn--ykq675h.cn';
@@ -36,6 +37,7 @@ export async function loadConfig(env: any): Promise<SiteConfig> {
     playlist: Array.isArray(music.playlist) ? music.playlist : [],
     password: admin.password || env.SITE_PASSWORD || DEFAULT_PASSWORD,
     authSecret: admin.authSecret || env.AUTH_SECRET || DEFAULT_SECRET,
+    githubToken: admin.githubToken || env.GITHUB_TOKEN || '',
   };
 }
 
