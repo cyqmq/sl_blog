@@ -14,10 +14,16 @@
     ]
   },
   {
-    "title": "节点",
+    "title": "网盘",
+    "icon": "package",
+    "links": [
+      { "name": "nextlist", "url": "https://list.xn--ykq675h.cn", "desc": "nextlist", "icon": "cloud" }
+    ]
+  },
+  {
+    "title": "中继",
     "icon": "link",
     "links": [
-      { "name": "nextlist", "url": "https://list.xn--ykq675h.cn", "desc": "nextlist", "icon": "cloud" },
       { "name": "vnts2-cf", "url": "https://wnt2.xn--ykq675h.cn", "desc": "vnts2-cf", "icon": "cloud" }
     ]
   },
