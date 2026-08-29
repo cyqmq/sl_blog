@@ -1,13 +1,37 @@
 [
   {
-    "title": "我的 Workers",
-    "icon": "rocket",
+    "title": "音乐",
+    "icon": "music",
     "links": [
-      { "name": "CFworker Netease", "url": "https://yy.xn--ykq675h.cn", "desc": "网易云解析 Worker", "icon": "cloud" },
+      { "name": "CFworker Netease", "url": "https://yy.xn--ykq675h.cn", "desc": "网易云解析 Worker", "icon": "cloud" }
+    ]
+  },
+  {
+    "title": "影视",
+    "icon": "tv",
+    "links": [
+      { "name": "iptv-manager", "url": "https://iptv.xn--ykq675h.cn", "desc": "iptv-manager", "icon": "cloud" }
+    ]
+  },
+  {
+    "title": "节点",
+    "icon": "link",
+    "links": [
       { "name": "nextlist", "url": "https://list.xn--ykq675h.cn", "desc": "nextlist", "icon": "cloud" },
-      { "name": "moemail", "url": "https://mail.xn--ykq675h.cn", "desc": "moemail", "icon": "cloud" },
-      { "name": "iptv-manager", "url": "https://iptv.xn--ykq675h.cn", "desc": "iptv-manager", "icon": "cloud" },
-      { "name": "vnts2-cf", "url": "https://wnt2.xn--ykq675h.cn", "desc": "vnts2-cf", "icon": "cloud" },
+      { "name": "vnts2-cf", "url": "https://wnt2.xn--ykq675h.cn", "desc": "vnts2-cf", "icon": "cloud" }
+    ]
+  },
+  {
+    "title": "邮箱",
+    "icon": "mail",
+    "links": [
+      { "name": "moemail", "url": "https://mail.xn--ykq675h.cn", "desc": "moemail", "icon": "cloud" }
+    ]
+  },
+  {
+    "title": "代码",
+    "icon": "github",
+    "links": [
       { "name": "GitHub", "url": "https://github.com/cyqmq", "desc": "我的 GitHub 仓库", "icon": "github" }
     ]
   }
