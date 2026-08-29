@@ -1,4 +1,4 @@
-name = "nav-blog-demo"
+name = "blogshenle"
 compatibility_date = "2024-11-01"
 pages_build_output_dir = "./dist"
 
@@ -6,5 +6,5 @@ pages_build_output_dir = "./dist"
 # 生产环境请在 Cloudflare 控制台创建 KV 命名空间，并把 id 替换为真实值，同时在
 # Pages 项目设置里绑定变量名 SITE_CONFIG。
 kv_namespaces = [
-  { binding = "SITE_CONFIG", id = "00000000000000000000000000000001" }
+  { binding = "SITE_CONFIG", id = "ab2427e52632419dadaf19ae8184805c" }
 ]

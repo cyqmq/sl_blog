@@ -28,9 +28,8 @@ export function clearCookieHeader(): string {
   return `${COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 }
 
-export async function isAuthed(request: Request, env: any): Promise<boolean> {
-  const secret = env.AUTH_SECRET || 'change-me-in-cf-dashboard';
-  const token = await makeToken(secret);
+export async function isAuthed(request: Request, secret: string): Promise<boolean> {
+  const token = await makeToken(secret || 'change-me-in-cf-dashboard');
   const cookie = request.headers.get('Cookie') || '';
   return cookie.includes(`${COOKIE}=${token}`);
 }

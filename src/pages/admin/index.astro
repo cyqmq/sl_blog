@@ -50,6 +50,16 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
       </div>
 
       <div class="form-row">
+        <label for="cfg-token">网易云 Worker Token（留空 = 不修改）</label>
+        <input id="cfg-token" type="password" placeholder="留空则不修改现有 Token" autocomplete="off" />
+      </div>
+
+      <div class="form-row">
+        <label for="cfg-password">管理员密码（留空 = 不修改）</label>
+        <input id="cfg-password" type="password" placeholder="留空则不修改现有密码" autocomplete="off" />
+      </div>
+
+      <div class="form-row">
         <label>播放列表（网易云歌曲 ID）</label>
         <div id="cfg-list" class="cfg-list"></div>
         <button type="button" id="cfg-add" class="btn-ghost">+ 添加一首</button>
@@ -80,6 +90,8 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
   <script>
     const apiEl = document.getElementById('cfg-api') as HTMLInputElement;
     const qEl = document.getElementById('cfg-quality') as HTMLSelectElement;
+    const tokenEl = document.getElementById('cfg-token') as HTMLInputElement;
+    const pwdEl = document.getElementById('cfg-password') as HTMLInputElement;
     const listEl = document.getElementById('cfg-list')!;
     const statusEl = document.getElementById('cfg-status')!;
     const escapeAttr = (s: string) =>
@@ -149,7 +161,13 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
         name: d.querySelector('.cfg-name').value,
         artist: d.querySelector('.cfg-artist').value,
       })).filter((t: any) => t.id > 0);
-      const body = { api: apiEl.value.trim(), quality: qEl.value, playlist };
+      const body = {
+        api: apiEl.value.trim(),
+        quality: qEl.value,
+        playlist,
+        neteaseToken: tokenEl.value.trim(),
+        password: pwdEl.value.trim(),
+      };
       statusEl.textContent = '保存中…';
       try {
         const r = await fetch('/api/config', {
@@ -162,6 +180,8 @@ const posts = (await getCollection('blog', ({ data }) => !data.draft)).sort(
         if (j.success && j.data) {
           qEl.value = j.data.quality;
           apiEl.value = j.data.api;
+          tokenEl.value = '';
+          pwdEl.value = '';
           listEl.innerHTML = '';
           (j.data.playlist || []).forEach((t: any) => listEl.appendChild(row(t)));
         }

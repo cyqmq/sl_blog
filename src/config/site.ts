@@ -1,6 +1,6 @@
 // 站点统一配置：改这里即可调整资料、社交链接、导航分类与主题。
 export const site = {
-  title: '我的站点',
+  title: 'blog神了',
   description: '导航站与博客 · 部署于 Cloudflare Pages',
 };
 

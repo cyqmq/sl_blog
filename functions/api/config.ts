@@ -1,9 +1,11 @@
-// 站点可配置项（音乐播放器）读写接口。
-// GET  /api/config  -> 公开，返回当前生效配置（KV 覆盖默认，缺 KV 时返回默认）。
+// 站点可配置项读写接口（统一存于 KV：music / netease / admin）。
+// GET  /api/config  -> 公开，返回生效配置（不含敏感字段：密码与 Token 不下发前端）。
 // POST /api/config  -> 需管理员 Cookie，将配置写入 KV（SITE_CONFIG 绑定）。
-// 配置结构：{ api: string, quality: string, playlist: [{ id:number, name:string, artist:string }] }
+//   · password / neteaseToken / authSecret 留空表示「不修改」，保留原值。
+//   · 仅 api / quality / playlist 始终更新。
 
 import { isAuthed } from '../_auth';
+import { loadConfig, readJson } from '../_config';
 
 const QUALITIES = ['standard', 'exhigh', 'lossless', 'hires', 'sky', 'jyeffect', 'jymaster', 'dolby'];
 
@@ -32,51 +34,39 @@ function json(data: any, status = 200) {
   });
 }
 
-function sanitize(input: any): { api: string; quality: string; playlist: any[] } {
-  const api = typeof input.api === 'string' && input.api.trim() ? input.api.trim() : DEFAULTS.api;
-  const quality = QUALITIES.includes(input.quality) ? input.quality : DEFAULTS.quality;
-  const playlist = Array.isArray(input.playlist)
-    ? input.playlist
-        .map((t: any) => ({
-          id: Number(t.id) || 0,
-          name: String(t.name || '').slice(0, 120),
-          artist: String(t.artist || '').slice(0, 120),
-        }))
-        .filter((t: any) => t.id > 0)
-        .slice(0, 200)
-    : DEFAULTS.playlist;
-  return { api, quality, playlist };
+function sanitizePlaylist(input: any): any[] {
+  if (!Array.isArray(input)) return DEFAULTS.playlist;
+  return input
+    .map((t: any) => ({
+      id: Number(t.id) || 0,
+      name: String(t.name || '').slice(0, 120),
+      artist: String(t.artist || '').slice(0, 120),
+    }))
+    .filter((t: any) => t.id > 0)
+    .slice(0, 200);
 }
 
 export async function onRequest(context: any) {
   const { request, env } = context;
   const method = request.method.toUpperCase();
   const kv = env.SITE_CONFIG;
+  const cfg = await loadConfig(env);
 
   if (method === 'OPTIONS') return json({ ok: true });
 
   if (method === 'GET') {
-    let cfg: any = DEFAULTS;
-    if (kv) {
-      try {
-        const raw = await kv.get('music');
-        if (raw) {
-          const p = JSON.parse(raw);
-          cfg = {
-            api: p.api || DEFAULTS.api,
-            quality: QUALITIES.includes(p.quality) ? p.quality : DEFAULTS.quality,
-            playlist: Array.isArray(p.playlist) ? p.playlist : DEFAULTS.playlist,
-          };
-        }
-      } catch {
-        cfg = DEFAULTS;
-      }
-    }
-    return json(cfg);
+    // 不下发密码与 Token 明文；仅告知是否已设置
+    return json({
+      api: cfg.api,
+      quality: cfg.quality,
+      playlist: cfg.playlist,
+      hasPassword: Boolean(cfg.password),
+      hasNeteaseToken: Boolean(cfg.neteaseToken),
+    });
   }
 
   if (method === 'POST' || method === 'PUT') {
-    if (!(await isAuthed(request, env))) {
+    if (!(await isAuthed(request, cfg.authSecret))) {
       return json({ success: false, message: '未授权，请先登录' }, 401);
     }
     if (!kv) {
@@ -91,9 +81,35 @@ export async function onRequest(context: any) {
     } catch {
       return json({ success: false, message: '无效的 JSON 请求体' }, 400);
     }
-    const out = sanitize(body);
-    await kv.put('music', JSON.stringify(out));
-    return json({ success: true, message: '配置已保存', data: out });
+
+    const music = {
+      api: typeof body.api === 'string' && body.api.trim() ? body.api.trim() : cfg.api,
+      quality: QUALITIES.includes(body.quality) ? body.quality : cfg.quality,
+      playlist: sanitizePlaylist(body.playlist),
+    };
+    await kv.put('music', JSON.stringify(music));
+
+    // netease：仅当填写了新 Token 才更新（留空保留原值）
+    if (body.neteaseToken && String(body.neteaseToken).trim()) {
+      const old = await readJson(env, 'netease');
+      old.token = String(body.neteaseToken).trim();
+      await kv.put('netease', JSON.stringify(old));
+    }
+
+    // admin：密码 / 签名密钥，留空保留原值
+    const oldAdmin = await readJson(env, 'admin');
+    let changed = false;
+    if (body.password && String(body.password).trim()) {
+      oldAdmin.password = String(body.password).trim();
+      changed = true;
+    }
+    if (body.authSecret && String(body.authSecret).trim()) {
+      oldAdmin.authSecret = String(body.authSecret).trim();
+      changed = true;
+    }
+    if (changed) await kv.put('admin', JSON.stringify(oldAdmin));
+
+    return json({ success: true, message: '配置已保存', data: { api: music.api, quality: music.quality, playlist: music.playlist } });
   }
 
   return json({ success: false, message: 'Method Not Allowed' }, 405);

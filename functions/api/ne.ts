@@ -2,7 +2,9 @@
 // 这样 token 不进入浏览器，跨域（含本地预览）也能正常调用。
 // 用法：/api/ne?path=song&id=123&level=exhigh&type=json
 //       /api/ne?path=download&id=123&quality=exhigh
-// Worker 基础地址优先取 KV 配置里的 api，其次环境变量 NETEASE_API。
+// Worker 地址与 Token 来自统一配置（KV 优先，env 兜底）。
+
+import { loadConfig } from '../_config';
 
 function sendError(message: string, status: number) {
   return new Response(JSON.stringify({ success: false, message }), {
@@ -17,18 +19,9 @@ function sendError(message: string, status: number) {
 export async function onRequest(context: any) {
   const { request, env } = context;
   const url = new URL(request.url);
-  const kv = env.SITE_CONFIG;
-
-  let base = env.NETEASE_API || '';
-  if (!base && kv) {
-    try {
-      const c = JSON.parse((await kv.get('music')) || '{}');
-      base = c.api || '';
-    } catch {}
-  }
-  if (!base) base = 'https://yy.xn--ykq675h.cn';
-
-  const token = env.NETEASE_TOKEN || '';
+  const cfg = await loadConfig(env);
+  const base = cfg.api || 'https://yy.xn--ykq675h.cn';
+  const token = cfg.neteaseToken || '';
   const sub = url.searchParams.get('path') || 'song';
   const qs = new URLSearchParams(url.search);
   qs.delete('path');

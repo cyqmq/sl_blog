@@ -1,9 +1,10 @@
 // Cloudflare Pages Functions 中间件：仅保护「管理员入口」(/admin)，
 // 站点其余部分（导航/博客等）保持公开。未登录访问 /admin -> 跳转 /login；
 // 登录成功下发 HttpOnly Cookie，之后可进入 /admin。
-// 环境变量：SITE_PASSWORD（管理员密码）、AUTH_SECRET（签发 Cookie 的密钥）。
+// 密码与签名密钥来自统一配置（KV 优先，env 兜底，见 _config.ts）。
 
 import { COOKIE, makeToken, cookieHeader, clearCookieHeader, isAuthed } from './_auth';
+import { loadConfig } from './_config';
 
 const LOGIN_PATH = '/login';
 const ADMIN_PREFIX = '/admin';
@@ -78,7 +79,8 @@ export async function onRequest(context: any) {
     });
   }
 
-  const authed = await isAuthed(request, env);
+  const cfg = await loadConfig(env);
+  const authed = await isAuthed(request, cfg.authSecret);
 
   // 登录页
   if (path === LOGIN_PATH) {
@@ -93,9 +95,9 @@ export async function onRequest(context: any) {
       } catch {
         /* ignore */
       }
-      if (pwd === (env.SITE_PASSWORD || '')) {
+      if (pwd === cfg.password) {
         const maxAge = remember ? 2592000 : 86400; // 30 天 / 1 天
-        const token = await makeToken(env.AUTH_SECRET || 'change-me-in-cf-dashboard');
+        const token = await makeToken(cfg.authSecret);
         return new Response(null, {
           status: 302,
           headers: {
