@@ -1,0 +1,68 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-deploy
+  cancel-in-progress: true
+
+env:
+  KV_NAMESPACE: nav-blog-demo-SITE_CONFIG
+  KV_BINDING: SITE_CONFIG
+  PAGES_PROJECT: blogshenle
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site
+        run: npm run build
+
+      - name: Ensure KV namespace exists and is bound to Pages
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -euo pipefail
+          AUTH="Authorization: Bearer $CF_TOKEN"
+          API="https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT"
+          # 1) 按名字查找已有命名空间，没有则创建
+          NS_ID=$(curl -s -H "$AUTH" "$API/storage/kv/namespaces?per_page=100" \
+            | jq -r --arg n "$KV_NAMESPACE" '.result[]? | select(.title==$n) | .id' | head -n1)
+          if [ -z "$NS_ID" ]; then
+            echo "创建 KV 命名空间 $KV_NAMESPACE"
+            NS_ID=$(curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+              --data "{\"title\":\"$KV_NAMESPACE\"}" "$API/storage/kv/namespaces" \
+              | jq -r '.result.id')
+          fi
+          echo "KV namespace id = $NS_ID"
+          # 2) 绑定到 Pages 项目（已绑定时 Cloudflare 会返回错误，可忽略）
+          curl -s -X POST -H "$AUTH" -H "Content-Type: application/json" \
+            --data "{\"namespace_id\":\"$NS_ID\",\"binding\":\"$KV_BINDING\"}" \
+            "$API/pages/projects/$PAGES_PROJECT/kv_namespaces" \
+            | jq -r '"绑定: success=\(.success) errors=\(.errors[0].message // "ok")"'
+
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy ./dist --project-name blogshenle --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CI: "1"
